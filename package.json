@@ -1,0 +1,49 @@
+{
+  "name": "cmtool-core",
+  "version": "0.17.0",
+  "private": true,
+  "description": "Lógica para migrar contenido de Contentful entre ambientes (comparar, planear, escribir y respaldar), sin pantalla: para un CLI, una web o un backend",
+  "keywords": [
+    "contentful",
+    "migration",
+    "environments",
+    "content-management"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "node --import ./test/setup.ts --test test/*.test.ts",
+    "check": "tsc && biome check . && node --import ./test/setup.ts --test test/*.test.ts",
+    "prepack": "node --run build",
+    "prepublishOnly": "node --run check"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "contentful-management": "12.19.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "24.19.1",
+    "typescript": "7.0.2"
+  }
+}

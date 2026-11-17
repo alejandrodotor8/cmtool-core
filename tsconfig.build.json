@@ -1,0 +1,14 @@
+{
+  // Compila el núcleo para publicarlo en npm: JavaScript y tipos en dist/ (los .ts de los imports pasan a .js).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {}
+  },
+  "include": ["src"]
+}

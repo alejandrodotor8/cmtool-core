@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    // Node ejecuta los .ts de los tests quitando los tipos; este tsconfig solo revisa (no genera archivos).
+    // Para publicar en npm se compila con tsconfig.build.json (JavaScript y tipos en dist/).
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    // El ejemplo importa 'cmtool-core' como lo haría quien instala el paquete; aquí apunta al código fuente.
+    "paths": {
+      "cmtool-core": ["./src/index.ts"],
+      "cmtool-core/node": ["./src/node.ts"]
+    },
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "test", "examples"]
+}

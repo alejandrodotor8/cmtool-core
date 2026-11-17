@@ -1,0 +1,15 @@
+node_modules
+# Lo que se publica en npm (se genera con el script `build`, y solo al empaquetar).
+dist
+*.tgz
+.DS_Store
+
+# Cada quien usa su gestor de paquetes (npm, pnpm, yarn o bun): los lockfiles no se suben.
+package-lock.json
+pnpm-lock.yaml
+bun.lock
+bun.lockb
+yarn.lock
+
+# Notas locales: no se suben.
+.temp
