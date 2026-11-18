@@ -7,33 +7,38 @@ Se publica **solo, con GitHub Actions, al subir una etiqueta de versión** (`v0.
 | Workflow | Cuándo corre | Qué hace |
 | --- | --- | --- |
 | [ci.yml](.github/workflows/ci.yml) | cada push a `main` y cada pull request | `check` (tipos, lint y tests), `build` y `npm pack --dry-run` |
-| [release.yml](.github/workflows/release.yml) | al subir una etiqueta `vX.Y.Z`, o al crear un Release en GitHub con una etiqueta nueva | revisa que la etiqueta sea la versión de `package.json`, y `npm publish --provenance --access public` |
+| [release.yml](.github/workflows/release.yml) | al subir una etiqueta `vX.Y.Z`, o al crear un Release en GitHub con una etiqueta nueva | revisa que la etiqueta sea la versión de `package.json` y, si esa versión no está ya en npm, `npm publish` con trusted publishing |
 
-`npm publish` corre antes `prepublishOnly` (el `check`, así que si un test falla no se publica) y `prepack` (el `build`, que borra `dist/` y lo vuelve a generar). `--provenance` hace que npm muestre de qué commit y de qué workflow salió cada versión.
+`npm publish` corre antes `prepublishOnly` (el `check`, así que si un test falla no se publica) y `prepack` (el `build`, que borra `dist/` y lo vuelve a generar). Con trusted publishing, npm agrega sola la *provenance*: en la página del paquete se ve de qué commit y de qué workflow salió cada versión.
 
 El paquete es **público y sin scope**, con licencia **MIT** a nombre de Alejandro Dotor ([LICENSE](LICENSE)), y no tiene `"private": true`. [test/package.test.ts](test/package.test.ts) falla si cambia lo que se sube (solo `dist/` y el CHANGELOG) o si falta la licencia.
 
 ## Configuración (una sola vez)
 
-1. **El token de npm, como secreto de GitHub.** En npmjs.com → *Access Tokens* → *Generate New Token* (Granular):
-   - *Permissions*: **Read and write**.
-   - *Packages*: **All packages** la primera vez, porque `cmtool-core` todavía no existe; después puedes limitarlo a `cmtool-core` y `cmtool-cli`.
-   - *Bypass two-factor authentication*: marcado, porque la Action no puede escribir un código.
+La Action publica con **trusted publishing**: npm confía en este workflow (`release.yml`, environment `prod`, repo `alejandrodotor8/cmtool-core`) y no hace falta ningún token. Pero npm solo deja configurarlo **para un paquete que ya existe**, así que la primera versión se publica a mano:
 
-   En este repo, en GitHub: *Settings* → *Environments* → *New environment* `prod` → *Add environment secret*: `NPM_TOKEN`. El workflow usa ese environment, así que el secreto solo lo ve la publicación.
+1. **La primera versión, desde tu terminal**, en la carpeta de este repo y con la versión de la etiqueta (`v0.17.0`):
 
-   Los tokens vencen. Cuando pase, la publicación falla con `E401` o `E404`: crea otro y reemplaza el secreto.
-2. **Mejor, sin token: *trusted publishing*.** Después de la primera publicación, en npmjs.com → `cmtool-core` → *Settings* → *Trusted Publisher* → *GitHub Actions*:
+   ```bash
+   npm login          # y comprueba con npm whoami
+   npm publish        # corre check y build antes de subir; npm te pide tu verificación en dos pasos
+   ```
 
-   | Campo | Valor |
-   | --- | --- |
-   | Organization or user | `alejandrodotor8` |
-   | Repository | `cmtool-core` |
-   | Workflow filename | `release.yml` |
-   | Environment name | `prod` |
+2. **Sube la etiqueta de esa versión** (`git push origin v0.17.0`). La Action ve que ya está en npm y no hace nada.
+3. **Justo antes de publicar la segunda versión, registra la Action como trusted publisher** (pide tu verificación en dos pasos):
 
-   Desde ahí npm acepta lo que publique ese workflow sin ningún token (ya tiene `id-token: write`), y puedes borrar el secreto `NPM_TOKEN`.
-3. **El push, desde este equipo**, entra con la llave SSH de `alejandrodotor8`: el remoto es `git@github-alejandrodotor8:alejandrodotor8/cmtool-core.git`, y ese alias está en `~/.ssh/config`. En otro equipo basta `git@github.com:alejandrodotor8/cmtool-core.git` con tu llave.
+   ```bash
+   npm trust github cmtool-core --file release.yml --repo alejandrodotor8/cmtool-core --env prod --allow-publish
+   npm trust list cmtool-core   # para revisarlo
+   ```
+
+   **No lo hagas antes:** npm borra un trusted publisher nuevo si no publica nada en los 2 días siguientes. Regístralo y, ese mismo día, sube la etiqueta de la versión nueva. Desde ahí la Action publica sola, siempre.
+
+   Es lo mismo que en npmjs.com → `cmtool-core` → *Settings* → *Trusted Publisher* → *GitHub Actions*, con *Allowed actions*: `npm publish`. **`--allow-publish` es necesario**: sin él, npm solo deja que el workflow prepare la publicación (`npm stage publish`) y que tú la apruebes.
+
+No uses un token con *bypass 2FA*: npm ya no deja que esos tokens publiquen directo (responde `EOTP`), y van a perder ese permiso del todo. Si ya creaste uno para esto, bórralo en npmjs.com (*Access Tokens*) y el secreto `NPM_TOKEN` del environment `prod` en GitHub: el workflow ya no lo usa.
+
+**El push, desde este equipo**, entra con la llave SSH de `alejandrodotor8`: el remoto es `git@github-alejandrodotor8:alejandrodotor8/cmtool-core.git`, con el alias de `~/.ssh/config` (que no usa el agente, para no entrar con la llave de Pragma). En otro equipo basta `git@github.com:alejandrodotor8/cmtool-core.git` con tu llave.
 
 ## Cada versión
 
@@ -85,13 +90,14 @@ En Windows (PowerShell), usa `$env:TEMP` en lugar de `/tmp`.
 
 ## Si algo sale mal
 
-En la Action, el error está en el paso que falló: *Actions* → la ejecución → *Publicar en npm*. Después de corregirlo, *Re-run jobs* vuelve a correrla con la misma etiqueta y el secreto actual.
+En la Action, el error está en el paso que falló: *Actions* → la ejecución → *Publicar en npm* (para ver el log hay que entrar a GitHub). Después de corregirlo, *Re-run jobs* vuelve a correrla con la misma etiqueta; si la versión ya se publicó, no hace nada.
 
 | Mensaje | Qué pasa | Qué hacer |
 | --- | --- | --- |
 | `La etiqueta v… no coincide con la versión de package.json` | subiste la etiqueta sin subir la versión, o al revés | borra la etiqueta (`git push --delete origin v0.18.0 && git tag -d v0.18.0`), corrige y vuelve a etiquetar |
-| `ENEEDAUTH` o `E401` | falta `NPM_TOKEN` en el environment `prod`, o venció | agrégalo o reemplázalo, y *Re-run jobs* |
-| `E404` … `PUT` | el token no tiene permiso sobre el paquete, o el trusted publisher no coincide con el repo, el workflow o el environment | revisa los permisos del token o los datos del trusted publisher |
+| `ENEEDAUTH`, `E401` o `E404` … `PUT` en la Action | npm no reconoce el workflow: falta el trusted publisher, o no coincide con el repo, el archivo (`release.yml`) o el environment (`prod`) | `npm trust list cmtool-core` y corrígelo (paso 2 de la configuración) |
+| `E403` … `stage` en la Action | el trusted publisher solo permite `npm stage publish` | vuelve a crearlo con `--allow-publish` |
+| `EOTP` en la Action | se está usando un token en vez de trusted publishing | quita el token (y el secreto `NPM_TOKEN`) y configura el trusted publisher |
 | un error de *provenance* sobre `repository` | `repository.url` de `package.json` no es este repo de GitHub | corrígelo |
 | `403` … `You do not have permission to publish` | el nombre ya es de otra cuenta | cambia el nombre |
 | `403` … `cannot publish over the previously published versions` | esa versión ya existe | sube la versión: una versión publicada no se puede reemplazar |

@@ -2,6 +2,9 @@ name: Publicar en npm
 
 # Publica al subir una etiqueta de versión (git tag v0.18.0 && git push origin v0.18.0), o al crear
 # un Release en GitHub con una etiqueta nueva. La etiqueta tiene que coincidir con package.json.
+#
+# Se autentica con trusted publishing (OIDC): npm confía en este workflow y no hace falta ningún
+# token. Se configura una sola vez en npm, después de publicar la primera versión (PUBLICAR.md).
 on:
   push:
     tags:
@@ -9,7 +12,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # provenance (de qué commit salió el paquete) y, si se configura, trusted publishing
+  id-token: write # trusted publishing: GitHub le da a npm una prueba de corta duración de qué workflow publica
 
 concurrency:
   group: publicar-npm
@@ -42,12 +45,23 @@ jobs:
             exit 1
           fi
 
+      # Si esa versión ya está en npm (por ejemplo, la primera, que se publica a mano), no hace nada:
+      # así volver a correr el workflow es seguro.
+      - name: ¿Esa versión ya está en npm?
+        id: npm
+        run: |
+          spec="$(node -p "const p = require('./package.json'); p.name + '@' + p.version")"
+          if npm view "$spec" version > /dev/null 2>&1; then
+            echo "publicada=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$spec ya está en npm: no se vuelve a publicar."
+          fi
+
       - name: Instalar dependencias
+        if: steps.npm.outputs.publicada != 'true'
         run: bun install
 
       # npm publish corre antes prepublishOnly (check: tipos, lint y tests) y prepack (build).
-      # Con NPM_TOKEN publica con el token; sin él, con trusted publishing si está configurado en npm.
+      # Con trusted publishing, npm agrega la provenance (de qué commit y workflow salió) sin más flags.
       - name: Publicar
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: steps.npm.outputs.publicada != 'true'
+        run: npm publish --access public
