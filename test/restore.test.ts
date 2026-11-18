@@ -45,7 +45,7 @@ describe('restoreStatus', () => {
 });
 
 describe('backupOwner', () => {
-  const ale = { userId: 'u-ale', email: 'ale@dislicores.com', host: 'api.contentful.com' };
+  const ale = { userId: 'u-ale', email: 'ale@example.com', host: 'api.contentful.com' };
 
   test('el respaldo es de la cuenta actual', () => {
     assert.equal(backupOwner({ account: ale }, ale), OWNER.SAME);

@@ -11,7 +11,7 @@ Primera versión como paquete propio.
 ### Agregado
 
 - **`cmtool-core`**: la lógica de `cfm` para migrar contenido de Contentful entre ambientes, sin pantalla: cliente, lecturas, comparación de modelos y de entries, plan, escritura, respaldo, restore y reportes. Funciona en Node y en el navegador; lo que necesita disco va aparte, en `cmtool-core/node`.
-- Se compila a JavaScript con sus tipos (`dist/`). Está listo para publicar en npm, pero sigue siendo `private` hasta que se decida; los pasos están en [PUBLICAR.md](PUBLICAR.md).
+- Se compila a JavaScript con sus tipos (`dist/`) y se publica en npm como **paquete público, con licencia MIT** ([LICENSE](LICENSE)). Los pasos están en [PUBLICAR.md](PUBLICAR.md). [test/package.test.ts](test/package.test.ts) cuida que solo se suba `dist/` y que la licencia esté.
 - `createCma` se niega a mandar el token a un host que no sea de Contentful. Antes solo lo revisaba el CLI; ahora cualquier herramienta que use el núcleo tiene la misma garantía.
 - `createRecordingRunner`: un runner sin pantalla que guarda el resultado de cada escritura, para una web, un backend o los tests.
 - `createBackup` arma el respaldo y avisa en cada cambio, sin decidir dónde se guarda. `startBackup`, `listBackups` y `readBackup` (en `cmtool-core/node`) los guardan en archivos, en la misma carpeta que usa `cfm`.

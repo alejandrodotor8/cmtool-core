@@ -111,3 +111,7 @@ bun run build && bun link
 ```
 
 **Publicar en npm**: ver [PUBLICAR.md](PUBLICAR.md). Cada cambio lleva su entrada en el [CHANGELOG](CHANGELOG.md) y sube la versión.
+
+## Licencia
+
+[MIT](LICENSE) © 2026 Alejandro Dotor.

@@ -9,7 +9,7 @@ import { AbortError } from '../src/errors.ts';
 import { accountBackupDir, listBackups, readBackup, startBackup } from '../src/node/backups.ts';
 import { entry, field } from './fixtures.ts';
 
-const alejandro: Account = { userId: 'u-ale', email: 'ale@dislicores.com', host: 'api.contentful.com' };
+const alejandro: Account = { userId: 'u-ale', email: 'ale@example.com', host: 'api.contentful.com' };
 const otra: Account = { userId: 'u-otra', email: 'otra@agencia.com', host: 'api.contentful.com' };
 
 const meta: Pick<BackupData, 'kind' | 'spaceId' | 'src' | 'dst' | 'rootIds'> & { account: Account } = {

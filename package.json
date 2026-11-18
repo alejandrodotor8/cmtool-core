@@ -1,7 +1,6 @@
 {
   "name": "cmtool-core",
   "version": "0.17.0",
-  "private": true,
   "description": "Lógica para migrar contenido de Contentful entre ambientes (comparar, planear, escribir y respaldar), sin pantalla: para un CLI, una web o un backend",
   "keywords": [
     "contentful",
@@ -9,6 +8,8 @@
     "environments",
     "content-management"
   ],
+  "license": "MIT",
+  "author": "Alejandro Dotor",
   "type": "module",
   "sideEffects": false,
   "exports": {
