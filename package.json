@@ -10,6 +10,14 @@
   ],
   "license": "MIT",
   "author": "Alejandro Dotor",
+  "homepage": "https://github.com/alejandrodotor8/cmtool-core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alejandrodotor8/cmtool-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alejandrodotor8/cmtool-core/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {

@@ -1,0 +1,41 @@
+name: CI
+
+# Revisa cada push a main y cada pull request: tipos, lint, tests, build y qué se publicaría en npm.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tipos, lint, tests y build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v5
+
+      - name: Instalar Node (la versión de .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      - name: Instalar bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Instalar dependencias
+        run: bun install
+
+      - name: Revisar (tipos, lint y tests)
+        run: bun run check
+
+      - name: Compilar
+        run: bun run build
+
+      - name: Qué se publicaría en npm
+        run: npm pack --dry-run

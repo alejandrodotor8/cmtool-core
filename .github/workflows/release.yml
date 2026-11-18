@@ -1,0 +1,53 @@
+name: Publicar en npm
+
+# Publica al subir una etiqueta de versión (git tag v0.18.0 && git push origin v0.18.0), o al crear
+# un Release en GitHub con una etiqueta nueva. La etiqueta tiene que coincidir con package.json.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write # provenance (de qué commit salió el paquete) y, si se configura, trusted publishing
+
+concurrency:
+  group: publicar-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publicar en npm
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v5
+
+      - name: Instalar Node (la versión de .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+
+      - name: Instalar bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: La etiqueta coincide con la versión de package.json
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::La etiqueta $GITHUB_REF_NAME no coincide con la versión de package.json ($expected)."
+            exit 1
+          fi
+
+      - name: Instalar dependencias
+        run: bun install
+
+      # npm publish corre antes prepublishOnly (check: tipos, lint y tests) y prepack (build).
+      # Con NPM_TOKEN publica con el token; sin él, con trusted publishing si está configurado en npm.
+      - name: Publicar
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
