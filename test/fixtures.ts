@@ -195,3 +195,76 @@ export function fakeCma(
   ) as Cma;
   return { cma, calls };
 }
+
+/** Lo que hay en un ambiente falso. Sin `locales`, el ambiente tiene solo es-CO. */
+export interface FakeEnvironment {
+  entries?: Entry[];
+  assets?: Asset[];
+  contentTypes?: ContentType[];
+  locales?: string[];
+  editors?: EditorInterface[];
+  tags?: Tag[];
+}
+
+type Params = Record<string, unknown>;
+
+/**
+ * CMA falso con varios ambientes, sin red. Cada lectura devuelve lo que hay en su ambiente en ese
+ * momento (si el test cambia un ambiente, la próxima lectura lo ve) y cada llamada queda en
+ * `calls`. Las escrituras devuelven lo que recibieron con la versión siguiente, como Contentful.
+ */
+export function fakeContentful(environments: Record<string, FakeEnvironment>) {
+  const calls: RecordedCall[] = [];
+  const env = (params: Params): FakeEnvironment => environments[params.environmentId as string] ?? {};
+  const byIds = <T extends { sys: { id: string } }>(items: T[] = [], params: Params) => {
+    const ids = (params.query as { 'sys.id[in]'?: string } | undefined)?.['sys.id[in]']?.split(',');
+    const found = ids ? items.filter((item) => ids.includes(item.sys.id)) : items;
+    return { items: found, total: found.length };
+  };
+  const reads: Record<string, (params: Params) => unknown> = {
+    'entry.getMany': (p) => byIds(env(p).entries, p),
+    'entry.get': (p) => env(p).entries?.find((e) => e.sys.id === p.entryId),
+    'asset.getMany': (p) => byIds(env(p).assets, p),
+    'contentType.getMany': (p) => ({ items: env(p).contentTypes ?? [], total: env(p).contentTypes?.length ?? 0 }),
+    'locale.getMany': (p) => ({
+      items: (env(p).locales ?? ['es-CO']).map((code, i) => ({ code, default: i === 0, optional: false })),
+    }),
+    'tag.getMany': (p) => ({ items: env(p).tags ?? [] }),
+    'editorInterface.getMany': (p) => ({ items: env(p).editors ?? [] }),
+    'editorInterface.get': (p) =>
+      env(p).editors?.find((e) => e.sys.contentType.sys.id === p.contentTypeId) ?? {
+        sys: { version: 1 },
+        controls: [],
+      },
+    'environment.getMany': () => ({
+      items: Object.keys(environments).map((id) => ({ sys: { id, status: { sys: { id: 'ready' } } } })),
+    }),
+    'environmentAlias.getMany': () => ({ items: [] }),
+  };
+
+  const handler = (entity: string, method: string) => async (params: Params, data?: unknown) => {
+    const key = `${entity}.${method}`;
+    calls.push({ method: key, params, data });
+    const read = reads[key];
+    if (read) return read(params);
+    const sys = (data as { sys?: { id?: string; version?: number } } | undefined)?.sys;
+    const id = sys?.id ?? params.entryId ?? params.assetId ?? params.contentTypeId ?? params.tagId ?? 'x';
+    return { ...(data as object), sys: { ...sys, id, version: (sys?.version ?? 0) + 1 } };
+  };
+
+  const cma = new Proxy(
+    {},
+    { get: (_, entity: string) => new Proxy({}, { get: (__, method: string) => handler(entity, method) }) },
+  ) as Cma;
+  /** Las llamadas que escriben (todo lo que no es una lectura). */
+  const writes = () => calls.filter((c) => !reads[c.method]);
+  const count = (method: string) => calls.filter((c) => c.method === method).length;
+  return { cma, calls, writes, count };
+}
+
+/** La apariencia del editor de un content type, con un control por campo. */
+export const editorOf = (ctId: string, fieldIds: string[]): EditorInterface =>
+  ({
+    sys: { version: 1, contentType: { sys: { id: ctId } } },
+    controls: fieldIds.map((fieldId) => ({ fieldId, widgetId: 'singleLine', widgetNamespace: 'builtin' })),
+  }) as unknown as EditorInterface;

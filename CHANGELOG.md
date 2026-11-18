@@ -2,7 +2,27 @@
 
 Cada cambio sube la versión: una funcionalidad nueva o un cambio de comportamiento sube la versión menor (0.17.0 → 0.18.0); una corrección, la de parche (0.18.0 → 0.18.1).
 
+Desde la 0.18.0, `cmtool-core` y `cmtool-cli` llevan siempre la misma versión: cada versión se publica en los dos, aunque uno no haya cambiado.
+
 Hasta la 0.16.1, este código era parte del CLI `cfm` (hoy `cmtool-cli`). Lo que cambió antes está en el CHANGELOG y el historial de git de ese repositorio.
+
+## 0.18.0 — 2026-11-18
+
+Una API más chica y fácil de leer: conectarse, elegir una migración y recorrer sus etapas. **Rompe la compatibilidad con 0.17** (ver *Cambiado*).
+
+### Agregado
+
+- **`connect`**, la puerta de entrada: abre la conexión con un token, y `connection.space(id)` abre un space que guarda lo que lee (ambientes, modelos, idiomas, apariencia del editor). Pedirlo otra vez no repite la llamada. `openSpace(cma)` hace lo mismo con un cliente que ya tienes.
+- **Migraciones por etapas** (un *builder* por pasos): `entryMigration`, `modelMigration`, `assetMigration` y `backupRestore`. Cada etapa devuelve la siguiente (analizar → decidir → plan → escribir), así que el orden no se puede saltar, y volver atrás no repite lecturas. Solo `execute` escribe, con un writer atado a destino que crea la propia migración.
+- `modelChoices`: los cambios de modelo que se pueden elegir, con cómo leerlos y escribirlos como el flag `--model`.
+- `backupRestore` trae al núcleo la escritura del restore, que antes hacía el CLI.
+- Tests: la conexión, las opciones de modelo y las cuatro migraciones de punta a punta, con un Contentful falso de varios ambientes ([test/migrations.test.ts](test/migrations.test.ts)). Y tres guardas nuevas: solo las migraciones crean un writer, `index.ts` dice explícitamente qué es público y no expone cómo se escribe.
+
+### Cambiado
+
+- **La API pública es explícita** ([src/index.ts](src/index.ts)), agrupada por para qué sirve, y pasa de 123 funciones y constantes a 73. Lo interno deja de ser público: `analyzeTree`, `completeAnalysis`, `buildPlan`, `executePlan`, `applyModelChanges`, `applyAssets`, `createWriter`, `classifyTree`, `readContentTypes`, `remember`… Las migraciones por etapas los reemplazan: el [README](README.md) y [examples/migrate.ts](examples/migrate.ts) muestran cómo.
+- `Envs` (origen y destino) es un tipo público.
+- El README cuenta la API de arriba abajo: conectarse, elegir la migración y recorrer sus etapas.
 
 ## 0.17.0 — 2026-11-17
 

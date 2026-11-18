@@ -1,6 +1,8 @@
 # Publicar cmtool-core en npm
 
-Se publica **solo, con GitHub Actions, al subir una etiqueta de versión** (`v0.18.0`). El CLI (`cmtool-cli`) y el Backoffice B2C dependen del núcleo, así que **el núcleo siempre se publica primero**. Esta guía no se incluye en el paquete: npm solo sube lo que dice `files` en `package.json`.
+Se publica **solo, con GitHub Actions, al subir una etiqueta de versión** (`v0.18.0`). El CLI (`cmtool-cli`) y el Backoffice B2C dependen del núcleo, así que **el núcleo siempre se publica primero**.
+
+**El núcleo y el CLI llevan siempre la misma versión.** Cada versión se publica en los dos, aunque uno no haya cambiado: primero el núcleo y después el CLI, que lo pide con su misma versión (su test lo revisa). Esta guía no se incluye en el paquete: npm solo sube lo que dice `files` en `package.json`.
 
 ## Cómo funciona
 
@@ -42,7 +44,7 @@ No uses un token con *bypass 2FA*: npm ya no deja que esos tokens publiquen dire
 
 ## Cada versión
 
-1. **CHANGELOG y versión.** Agrega una entrada en [CHANGELOG.md](CHANGELOG.md) y sube la versión: menor si es una funcionalidad, de parche si es una corrección.
+1. **CHANGELOG y versión.** Agrega una entrada en [CHANGELOG.md](CHANGELOG.md) y sube la versión: menor si es una funcionalidad, de parche si es una corrección. La misma que va a llevar el CLI.
 
    ```bash
    bun pm version 0.18.0 --no-git-tag-version   # o: npm version 0.18.0 --no-git-tag-version
@@ -65,7 +67,7 @@ No uses un token con *bypass 2FA*: npm ya no deja que esos tokens publiquen dire
 
    La Action *Publicar en npm* aparece en la pestaña *Actions* del repo. También puedes crear un Release en GitHub con la etiqueta `v0.18.0`, y así quedan las notas de la versión.
 5. **Verifica**: `npm view cmtool-core version` debe mostrar la versión nueva.
-6. **Actualiza a quien la use**: en el CLI, `bun add -d -E cmtool-core@0.18.0`; en el Backoffice, `bun add -E cmtool-core@0.18.0`.
+6. **Publica el CLI con la misma versión** (su `PUBLICAR.md`): ahí, `bun add -d -E cmtool-core@0.18.0`. En el Backoffice, `bun add -E cmtool-core@0.18.0`.
 
 ## Publicar desde tu terminal
 
@@ -73,7 +75,7 @@ Si la Action no está disponible:
 
 ```bash
 npm login                 # y comprueba con npm whoami
-npm pack --dry-run        # solo dist/, README.md, CHANGELOG.md, LICENSE y package.json (66 archivos, ~51 kB)
+npm pack --dry-run        # solo dist/, README.md, CHANGELOG.md, LICENSE y package.json (80 archivos, ~62 kB)
 npm publish               # corre check y build antes de subir; con verificación en dos pasos pide un código
 ```
 

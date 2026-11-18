@@ -35,6 +35,18 @@ describe('seguridad del código', () => {
     assert.deepEqual(offenders, []);
   });
 
+  test('solo las migraciones (src/migrations/) crean un writer, siempre atado a su destino', () => {
+    const MIGRATIONS = path.join(SRC, 'migrations');
+    const creators = sourceFiles(SRC)
+      .filter((file) => file !== WRITER && /\bcreateWriter\(/.test(fs.readFileSync(file, 'utf8')))
+      .map((file) => path.relative(ROOT, file));
+    assert.ok(creators.length > 0);
+    assert.deepEqual(
+      creators.filter((file) => !path.join(ROOT, file).startsWith(MIGRATIONS)),
+      [],
+    );
+  });
+
   test('el writer no tiene forma de borrar, archivar ni despublicar', () => {
     const code = fs.readFileSync(WRITER, 'utf8');
     assert.doesNotMatch(code, /\.(delete|archive|unarchive|unpublish)\(/);

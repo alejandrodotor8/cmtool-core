@@ -30,6 +30,12 @@ export interface Account {
   host: string;
 }
 
+/** Origen y destino de una migración o una comparación (IDs de ambiente). */
+export interface Envs {
+  src: string;
+  dst: string;
+}
+
 export interface Environment {
   id: string;
   /** Aliases que apuntan a este ambiente (por ejemplo, `master`). */

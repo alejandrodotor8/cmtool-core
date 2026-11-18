@@ -3,54 +3,40 @@
  * Es el mismo flujo de `cfm migrate`: analizar (solo lee) → planear (puro) → confirmar → escribir.
  * Lo revisa tsc junto con el resto del proyecto, así que no se queda viejo.
  */
-import {
-  allPicks,
-  analyzeTree,
-  type BackupData,
-  buildPlan,
-  completeAnalysis,
-  createBackup,
-  createCma,
-  createRecordingRunner,
-  createWriter,
-  currentUser,
-  defaultUpdates,
-  executePlan,
-  modelOptions,
-  readEditorInterfaces,
-  updateCandidates,
-  writtenContentTypes,
-} from 'cmtool-core';
+import { type BackupData, connect, createBackup, createRecordingRunner, entryMigration } from 'cmtool-core';
 
 export async function migrateEntry(token: string, spaceId: string, entryId: string): Promise<string[]> {
-  const cma = createCma({ token }, spaceId); // solo acepta hosts de Contentful
-  const envs = { src: 'develop', dst: 'qa' };
+  const contentful = connect({ token }); // el token solo va a hosts de Contentful
+  const space = contentful.space(spaceId);
+  const migration = entryMigration(space, { src: 'develop', dst: 'qa' });
 
   // 1. Analizar (solo lectura): el árbol de la entry y qué ya existe en destino.
-  const tree = await analyzeTree(cma, { ...envs, rootIds: [entryId] });
-  const toUpdate = defaultUpdates(updateCandidates(tree)); // o las que elija la persona
-  const analysis = await completeAnalysis(cma, tree, toUpdate);
+  const tree = await migration.analyze([entryId]);
+  const review = await tree.review(tree.defaultUpdates()); // o las que elija la persona
 
-  // 2. Planear (puro): qué cambios de modelo aplicar (aquí, todos los que hagan falta) y qué escribir.
-  const options = modelOptions(analysis.diffs.values(), writtenContentTypes(analysis));
-  const plan = buildPlan(analysis, { withAssets: true, picked: allPicks(options) });
+  // 2. Planear (puro): aquí, con todos los cambios de modelo que hagan falta.
+  const choices = await review.modelChoices();
+  const plan = review.plan({ withAssets: true, picked: choices.all });
+  if (plan.isEmpty) return [];
 
   // 3. Aquí la herramienta muestra el plan y pide confirmación. Nada se escribió todavía.
+  //    Justo antes de escribir, se revisa que destino siga como estaba.
+  const changed = await plan.changesInDestination();
+  if (changed.length) throw new Error(`qa cambió mientras se revisaba el plan: ${changed.join(', ')}`);
 
-  // 4. Escribir: respaldo (dónde se guarda lo decides tú), writer atado al destino y runner sin pantalla.
-  const user = await currentUser(cma);
+  // 4. Escribir: el respaldo (dónde se guarda lo decides tú) y un runner sin pantalla.
   const saved: BackupData[] = [];
   const backup = createBackup(
     {
       kind: 'migrate',
       spaceId,
-      ...envs,
+      src: migration.src,
+      dst: migration.dst,
       rootIds: [entryId],
-      account: { userId: user.id, email: user.email, host: 'api.contentful.com' },
+      account: await contentful.account(),
     },
     (data) => saved.push(structuredClone(data)), // en una web: guardarlo en tu base de datos
   );
   const runner = createRecordingRunner((phases) => console.log(phases.at(-1)));
-  const writer = createWriter(cma, envs);
-  return executePlan(plan, analysis, () => readEditorInterfaces(cma, envs.src), { writer, backup, runner });
+  return plan.execute({ backup, runner });
 }

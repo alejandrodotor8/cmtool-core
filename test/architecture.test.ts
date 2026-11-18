@@ -46,6 +46,25 @@ describe('arquitectura del núcleo', () => {
     assert.deepEqual(external, []);
   });
 
+  test('index.ts dice explícitamente qué es público: sin export *', () => {
+    const index = fs.readFileSync(path.join(SRC, 'index.ts'), 'utf8');
+    assert.doesNotMatch(index, /export \*/);
+  });
+
+  test('la API pública no expone cómo se escribe: solo las migraciones escriben', () => {
+    const index = fs.readFileSync(path.join(SRC, 'index.ts'), 'utf8');
+    for (const internal of [
+      'createWriter',
+      'Writer',
+      'executePlan',
+      'applyModelChanges',
+      'applyAssets',
+      'WriteContext',
+    ]) {
+      assert.doesNotMatch(index, new RegExp(`\\b${internal}\\b`), `${internal} no debe ser público`);
+    }
+  });
+
   test('ningún import sale de src/: el paquete publicado es solo dist/', () => {
     const outside = coreFiles.flatMap((file) =>
       [...fs.readFileSync(file, 'utf8').matchAll(IMPORT)]

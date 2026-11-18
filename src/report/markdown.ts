@@ -2,6 +2,7 @@
  * Reportes en Markdown para compartir con el equipo. Usan los mismos textos que la
  * terminal (ui/text.ts), sin colores. Funciones puras.
  */
+import type { Envs } from '../contentful/types.ts';
 import { type FieldComparison, summarizeValue, VALUE } from '../core/entry-compare.ts';
 import { type ContentTypeDiff, fieldType, hasDifferences, type ModelComparison } from '../core/model.ts';
 import type { EditorDiffs } from '../core/model-changes.ts';
@@ -17,11 +18,6 @@ export function mdTable(headers: string[], rows: (string | number)[][]): string 
     `| ${headers.map(() => '---').join(' | ')} |`,
     ...rows.map((row) => `| ${row.map(cell).join(' | ')} |`),
   ].join('\n');
-}
-
-interface Envs {
-  src: string;
-  dst: string;
 }
 
 const header = (title: string, { src, dst }: Envs, now: Date) =>
