@@ -6,6 +6,21 @@ Desde la 0.18.0, `cmtool-core` y `cmtool-cli` llevan siempre la misma versión: 
 
 Hasta la 0.16.1, este código era parte del CLI `cfm` (hoy `cmtool-cli`). Lo que cambió antes está en el CHANGELOG y el historial de git de ese repositorio.
 
+## 0.19.0 — 2026-11-18
+
+Para mostrar campo por campo lo que hace una migración, también lo que no cambia.
+
+### Agregado
+
+- **`migrationFields`**: cómo quedaría cada campo de una entry en destino si se escribe. Trae los que cambian, los que siguen igual (`SAME`) y los que no se migran porque en destino tienen otro tipo (`skipped`). Sirve también para las entries que se crean (sin `dst`): cada campo con valor llega nuevo. `isFieldChange` dice si un campo cambia.
+- **`tree.analysis.fields`**: ese reporte para cada entry del árbol, exista o no en destino. Se arma con lo que ya se leyó al analizar: no hace llamadas nuevas.
+- **`describeAsset`** (nombre, archivo, tipo, medidas, peso y URL https de una imagen o archivo) y **`assetDetailText`** (`image/png · 800×600 · 120 KB`), para que el CLI y una web muestren lo mismo. También `formatBytes`.
+- `assetIdsOf` es público: las imágenes y archivos que usa una entry.
+
+### Cambiado
+
+- `migrationChanges` sale de `migrationFields` (son sus campos que cambian), así la regla está en un solo lugar. El resultado es el mismo que antes.
+
 ## 0.18.0 — 2026-11-18
 
 Una API más chica y fácil de leer: conectarse, elegir una migración y recorrer sus etapas. **Rompe la compatibilidad con 0.17** (ver *Cambiado*).

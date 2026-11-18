@@ -62,6 +62,7 @@ export type {
   Tag,
   TagLink,
 } from './contentful/types.ts';
+export { type AssetInfo, describeAsset } from './core/assets.ts';
 export { type Decision, formatDecision, parseDecision } from './core/decision.ts';
 // 4. Comparar (solo lectura)
 export {
@@ -70,10 +71,12 @@ export {
   type EditorPart,
   type SettingChange,
 } from './core/editor.ts';
-export { contentTypeOf, makeTitleOf } from './core/entries.ts';
+export { assetIdsOf, contentTypeOf, makeTitleOf } from './core/entries.ts';
 export {
   compareEntryFields,
   type FieldComparison,
+  isFieldChange,
+  migrationFields,
   summarizeValue,
   TAGS,
   VALUE,
@@ -140,12 +143,14 @@ export type { Progress, WriteTools } from './migrations/shared.ts';
 export { entryComparisonReport, modelComparisonReport, statusReport } from './report/markdown.ts';
 export { createRecordingRunner, type PhaseResult, type Runner } from './runner.ts';
 export {
+  assetDetailText,
   BACKUP_KIND_LABEL,
   changedFieldsText,
   contentTypeStatusParts,
   ctInfoText,
   editorDiffText,
   fieldStatusText,
+  formatBytes,
   modelPicksSummary,
   modelPickText,
   ruleUpdateText,

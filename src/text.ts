@@ -2,6 +2,7 @@
  * Textos (sin color) que comparten la terminal y los reportes en Markdown.
  */
 import type { BackupData } from './backup.ts';
+import type { AssetInfo } from './core/assets.ts';
 import { EDITOR_PART, type EditorFieldDiff, type EditorPart } from './core/editor.ts';
 import type { FieldComparison } from './core/entry-compare.ts';
 import { type ContentTypeDiff, CT_INFO, type CtInfoPart, FIELD, type FieldRow, fieldType } from './core/model.ts';
@@ -58,6 +59,22 @@ function rulesText({ rules, dstField }: FieldRow, dst: string, dstDefault: strin
 }
 
 const yesNo = (value: boolean | undefined) => (value ? 'sí' : 'no');
+
+/** "820 B", "34 KB", "1.2 MB"; vacío si no se sabe. */
+export const formatBytes = (n: number | undefined): string =>
+  n == null
+    ? ''
+    : n < 1024
+      ? `${n} B`
+      : n < 1024 ** 2
+        ? `${Math.round(n / 1024)} KB`
+        : `${(n / 1024 ** 2).toFixed(1)} MB`;
+
+/** "image/png · 800×600 · 120 KB": el detalle de un archivo, con lo que se sepa. */
+export const assetDetailText = ({ contentType, dimensions, bytes }: AssetInfo): string =>
+  [contentType, dimensions && `${dimensions.width}×${dimensions.height}`, formatBytes(bytes)]
+    .filter(Boolean)
+    .join(' · ');
 
 /** "2 campo(s): Título, CTA (campo nuevo)": lo que cambiaría al actualizar una entry. */
 export const changedFieldsText = (fields: FieldComparison[], max = 50): string =>

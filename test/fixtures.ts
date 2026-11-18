@@ -12,7 +12,7 @@ import type {
   Tag,
 } from '../src/contentful/types.ts';
 import { childEntryIds, contentTypeOf, hyperlinkedEntryIds, isArchived, makeTitleOf } from '../src/core/entries.ts';
-import { migrationChanges } from '../src/core/entry-compare.ts';
+import { migrationChanges, migrationFields } from '../src/core/entry-compare.ts';
 import { diffContentType } from '../src/core/model.ts';
 import { classifyTree, writtenEntries } from '../src/core/plan.ts';
 
@@ -128,6 +128,16 @@ export function analysisOf({
         : [];
     }),
   );
+  const fields = new Map(
+    [...tree.entries].map(([id, source]) => [
+      id,
+      migrationFields(source, dstById.get(id), {
+        srcCT: contentTypes.src.get(contentTypeOf(source)),
+        dstCT: contentTypes.dst.get(contentTypeOf(source)),
+        locales: { src: loc, dst: loc },
+      }),
+    ]),
+  );
   const analysis: Analysis = {
     src: 'develop',
     dst: 'qa',
@@ -135,6 +145,7 @@ export function analysisOf({
     tree,
     dstEntries: dstById,
     changes,
+    fields,
     existsInDst: exists,
     archivedInDst: new Set(dstEntries.filter(isArchived).map((e) => e.sys.id)),
     actions,

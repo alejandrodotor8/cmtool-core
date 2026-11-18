@@ -1,7 +1,7 @@
 /**
  * Comparación de una entry entre dos ambientes, campo por campo. Funciones puras.
  */
-import type { ContentType, Entry, Locales } from '../contentful/types.ts';
+import type { ContentType, Entry, Field, Locales } from '../contentful/types.ts';
 import { fieldsForDestination, mergeWithExisting, writableFields } from './fields.ts';
 import { exactJson } from './json.ts';
 import { diffContentType } from './model.ts';
@@ -23,6 +23,8 @@ export interface FieldComparison {
   dst: unknown;
   /** El campo falta en el modelo de destino: el cambio solo se aplica si se agrega. */
   newField?: boolean;
+  /** En destino el campo tiene otro tipo: la migración no lo escribe y conserva su valor. */
+  skipped?: boolean;
 }
 
 /** ID con el que se comparan los tags de una entry (no son un campo del modelo). */
@@ -108,47 +110,63 @@ export interface MigrationModel {
 }
 
 /**
- * Lo que una migración cambiaría en una entry que ya existe en destino. Arma la entry como
- * quedaría (con las mismas reglas con que se escribe: campos con el mismo tipo, idiomas de
- * destino, lo que solo existe allá se conserva) y la compara con la actual. Los campos que
- * faltan en el modelo de destino cuentan, marcados como `newField`: se escriben si se agregan.
- * También cuenta si origen tiene tags que la entry no tiene en destino.
+ * Cómo quedaría cada campo de una entry en destino si se escribe: los que cambian, los que
+ * siguen igual (`SAME`) y los que no se migran porque en destino tienen otro tipo (`skipped`).
+ * Arma la entry con las mismas reglas con que se escribe (campos con el mismo tipo, idiomas de
+ * destino, lo que solo existe allá se conserva) y la compara con la actual. Va en el orden del
+ * modelo de origen, con los tags al final, y omite los campos vacíos en los dos lados.
+ * - Sin `dst`, la entry se crea: cada campo con valor llega nuevo (`ONLY_SRC`).
+ * - Los campos que faltan en el modelo de destino van marcados `newField`: se escriben si se agregan.
+ * - Sin content type en destino, se toma el de origen: así se crearía.
  */
-export function migrationChanges(src: Entry, dst: Entry, { srcCT, dstCT, locales }: MigrationModel): FieldComparison[] {
-  if (!srcCT || !dstCT) return [];
+export function migrationFields(
+  src: Entry,
+  dst: Entry | undefined,
+  { srcCT, dstCT, locales }: MigrationModel,
+): FieldComparison[] {
+  if (!srcCT) return [];
   const diff = diffContentType(srcCT, dstCT);
-  const writable = writableFields(dstCT, diff);
+  const writable = dstCT ? writableFields(dstCT, diff) : new Map<string, Field>();
   for (const field of diff.missing) writable.set(field.id, field);
-  const newFields = new Set(diff.missing.map((f) => f.id));
+  // Con el content type entero por crear, ningún campo es "nuevo" por separado.
+  const newFields = new Set(dstCT ? diff.missing.map((f) => f.id) : []);
 
   const source = { locales: locales.src, ct: srcCT };
-  const current = dst.fields ?? {};
+  const current = dst?.fields ?? {};
   const incoming = fieldsForDestination(src, writable, locales.dst, source);
-  const projected = mergeWithExisting(current, incoming, writable, source);
+  const projected = dst ? mergeWithExisting(current, incoming, writable, source) : incoming;
 
-  const fields = srcCT.fields
-    .filter((f) => writable.has(f.id))
-    .flatMap((f) => {
-      const change = compareValues(f.id, f.name, projected[f.id], current[f.id]);
-      if (!change || change.status === VALUE.SAME) return [];
-      return [newFields.has(f.id) ? { ...change, newField: true } : change];
-    });
-  return [...fields, ...tagChanges(src, dst)];
+  const fields = srcCT.fields.flatMap((f): FieldComparison[] => {
+    if (!writable.has(f.id)) {
+      const kept = compareValues(f.id, f.name, src.fields?.[f.id], current[f.id]);
+      return kept ? [{ ...kept, skipped: true }] : [];
+    }
+    const row = compareValues(f.id, f.name, projected[f.id], current[f.id]);
+    if (!row) return [];
+    return [newFields.has(f.id) ? { ...row, newField: true } : row];
+  });
+  return [...fields, ...tagFields(src, dst)];
 }
 
-/** Tags de origen que la entry no tiene en destino (al actualizar se agregan; ninguno se quita). */
-function tagChanges(src: Entry, dst: Entry): FieldComparison[] {
-  const ids = (e: Entry) => (e.metadata?.tags ?? []).map((t) => t.sys.id);
+/** El campo cambia en destino al escribir la entry: no sigue igual ni se salta. */
+export const isFieldChange = (field: FieldComparison): boolean => field.status !== VALUE.SAME && !field.skipped;
+
+/**
+ * Lo que una migración cambiaría en una entry que ya existe en destino: los campos de
+ * `migrationFields` que cambian. También cuenta si origen tiene tags que destino no tiene.
+ */
+export function migrationChanges(src: Entry, dst: Entry, model: MigrationModel): FieldComparison[] {
+  if (!model.srcCT || !model.dstCT) return [];
+  return migrationFields(src, dst, model).filter(isFieldChange);
+}
+
+/** Los tags al escribir: se agregan los de origen que faltan y ninguno se quita. */
+function tagFields(src: Entry, dst: Entry | undefined): FieldComparison[] {
+  const ids = (e: Entry | undefined) => (e?.metadata?.tags ?? []).map((t) => t.sys.id);
   const current = ids(dst);
-  const added = ids(src).filter((id) => !current.includes(id));
-  if (!added.length) return [];
-  return [
-    {
-      id: TAGS,
-      name: 'Tags',
-      status: current.length ? VALUE.DIFFERENT : VALUE.ONLY_SRC,
-      src: [...current, ...added],
-      dst: current,
-    },
-  ];
+  const incoming = ids(src);
+  if (!incoming.length) return [];
+  const added = incoming.filter((id) => !current.includes(id));
+  const status = !added.length ? VALUE.SAME : current.length ? VALUE.DIFFERENT : VALUE.ONLY_SRC;
+  return [{ id: TAGS, name: 'Tags', status, src: [...current, ...added], dst: current }];
 }

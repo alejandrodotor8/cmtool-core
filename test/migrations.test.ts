@@ -52,6 +52,14 @@ describe('entryMigration: de punta a punta', () => {
     const tree = await entryMigration(space, envs).analyze(['page']);
     assert.equal(tree.analysis.tree.entries.size, 2);
     assert.deepEqual(tree.candidates, [], 'nada existe en destino: no hay qué actualizar');
+    assert.deepEqual(
+      tree.analysis.fields.get('page')?.map((f) => [f.id, f.status]),
+      [
+        ['title', 'only-src'],
+        ['banner', 'only-src'],
+      ],
+      'de lo que se crea, cada campo con su valor',
+    );
 
     const review = await tree.review(tree.defaultUpdates());
     const choices = await review.modelChoices();

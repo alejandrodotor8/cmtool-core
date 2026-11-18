@@ -13,7 +13,7 @@ import {
 } from './contentful/read.ts';
 import type { Asset, Cma, ContentType, Entry, EntryTree, Locales, Tag } from './contentful/types.ts';
 import { assetIdsOf, contentTypeOf, isArchived, makeTitleOf } from './core/entries.ts';
-import { type FieldComparison, migrationChanges } from './core/entry-compare.ts';
+import { type FieldComparison, migrationChanges, migrationFields } from './core/entry-compare.ts';
 import { type ContentTypeDiff, diffContentType } from './core/model.ts';
 import { ACTION, type Action, changedInDst, classifyTree, writtenEntries } from './core/plan.ts';
 
@@ -30,6 +30,11 @@ export interface TreeAnalysis {
   archivedInDst: Set<string>;
   /** Por cada entry que ya existe en destino, los campos que una migración cambiaría (vacío: sin cambios). */
   changes: Map<string, FieldComparison[]>;
+  /**
+   * Por cada entry del árbol (exista o no en destino), cómo quedaría cada campo si se escribe:
+   * cambia, sigue igual o no se migra (ver `migrationFields`). Para mostrarlo campo por campo.
+   */
+  fields: Map<string, FieldComparison[]>;
   titleOf: (entry: Entry) => string;
 }
 
@@ -83,12 +88,13 @@ export async function analyzeTree(
     load.locales(dst),
   ]);
   const changes = new Map<string, FieldComparison[]>();
+  const fields = new Map<string, FieldComparison[]>();
   for (const [id, entry] of tree.entries) {
     const current = dstEntries.get(id);
-    if (!current) continue;
     const ct = contentTypeOf(entry);
     const model = { srcCT: srcCTs.get(ct), dstCT: dstCTs.get(ct), locales: { src: srcLocales, dst: dstLocales } };
-    changes.set(id, migrationChanges(entry, current, model));
+    fields.set(id, migrationFields(entry, current, model));
+    if (current) changes.set(id, migrationChanges(entry, current, model));
   }
 
   return {
@@ -100,6 +106,7 @@ export async function analyzeTree(
     existsInDst: new Set(dstEntries.keys()),
     archivedInDst: new Set([...dstEntries.values()].filter(isArchived).map((e) => e.sys.id)),
     changes,
+    fields,
     titleOf: makeTitleOf(srcCTs, srcLocales.default),
   };
 }

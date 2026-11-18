@@ -56,7 +56,7 @@ El ejemplo completo, que revisa tsc, está en [examples/migrate.ts](examples/mig
 | `assetMigration(space, envs)` | imágenes y archivos sueltos | `analyze(ids)` → `execute(tools)` |
 | `backupRestore(space, data)` | deshacer una ejecución con su respaldo | `analyze()` → `execute(tools)` |
 
-Cada etapa trae lo que hace falta para mostrar y decidir: `tree.candidates` (lo que ya existe y cambió), `review.analysis`, `choices.options`, `plan.gaps` (campos obligatorios que quedarán vacíos), `plan.isEmpty`… Las decisiones también se pueden recibir y escribir como en un flag (`'all'`, `'none'` o una lista): `tree.updateDecision`, `choices.decisionFor` y `choices.apply`.
+Cada etapa trae lo que hace falta para mostrar y decidir: `tree.candidates` (lo que ya existe y cambió), `tree.analysis.fields` (de cada entry, campo por campo, qué cambia, qué sigue igual y qué no se migra), `review.analysis`, `choices.options`, `plan.gaps` (campos obligatorios que quedarán vacíos), `plan.isEmpty`… Las decisiones también se pueden recibir y escribir como en un flag (`'all'`, `'none'` o una lista): `tree.updateDecision`, `choices.decisionFor` y `choices.apply`.
 
 La etapa de análisis de `modelMigration` solo lee, así que también sirve para comparar modelos.
 
@@ -66,9 +66,9 @@ Todo lo público está en [src/index.ts](src/index.ts), agrupado por para qué s
 
 | Para | Qué usar |
 | --- | --- |
-| **Comparar** (solo lectura) | `compareModels`, `compareEntryFields`, `environmentStatus` |
+| **Comparar** (solo lectura) | `compareModels`, `compareEntryFields`, `migrationFields` (cómo quedaría cada campo al migrar), `environmentStatus` |
 | **Reportes Markdown** | `modelComparisonReport`, `entryComparisonReport`, `statusReport` |
-| **Textos para cualquier pantalla** | `modelPickText`, `fieldStatusText`, `changedFieldsText`, `ctInfoText`… (sin colores) |
+| **Textos para cualquier pantalla** | `modelPickText`, `fieldStatusText`, `changedFieldsText`, `ctInfoText`, `summarizeValue`, `describeAsset` + `assetDetailText`… (sin colores) |
 | **Buscar qué migrar** | `searchEntries`, `searchAssets`, `listEntries`, `fetchEntries`, `readTags`, y `space.cma` para lo demás |
 | **Respaldo y avance** | `createBackup`, `createRecordingRunner` (y `startBackup`, `listBackups`, `readBackup` en `cmtool-core/node`) |
 | **Utilidades** | `parseEntryIds`, `parseDecision`, `entryQueryParams`, `parseSince`, `sortEnvironments`, `looksLikeProduction`, `LIMITS` |
