@@ -66,9 +66,9 @@ Todo lo público está en [src/index.ts](src/index.ts), agrupado por para qué s
 
 | Para | Qué usar |
 | --- | --- |
-| **Comparar** (solo lectura) | `compareModels`, `compareEntryFields`, `migrationFields` (cómo quedaría cada campo al migrar), `environmentStatus` |
+| **Comparar** (solo lectura) | `compareModels`, `compareEntryFields`, `migrationFields` (cómo quedaría cada campo al migrar), `diffFieldValues` y `diffText` (qué cambia en un valor, palabra por palabra), `environmentStatus` |
 | **Reportes Markdown** | `modelComparisonReport`, `entryComparisonReport`, `statusReport` |
-| **Textos para cualquier pantalla** | `modelPickText`, `fieldStatusText`, `changedFieldsText`, `ctInfoText`, `summarizeValue`, `describeAsset` + `assetDetailText`… (sin colores) |
+| **Textos para cualquier pantalla** | `modelPickText`, `fieldStatusText`, `changedFieldsText`, `ctInfoText`, `summarizeValue` (corto), `valueText` (completo), `describeAsset` + `assetDetailText`… (sin colores) |
 | **Buscar qué migrar** | `searchEntries`, `searchAssets`, `listEntries`, `fetchEntries`, `readTags`, y `space.cma` para lo demás |
 | **Respaldo y avance** | `createBackup`, `createRecordingRunner` (y `startBackup`, `listBackups`, `readBackup` en `cmtool-core/node`) |
 | **Utilidades** | `parseEntryIds`, `parseDecision`, `entryQueryParams`, `parseSince`, `sortEnvironments`, `looksLikeProduction`, `LIMITS` |

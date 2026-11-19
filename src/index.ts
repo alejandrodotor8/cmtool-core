@@ -125,6 +125,15 @@ export type { RequiredGap } from './core/publish-check.ts';
 export { type EntryQuery, entryQueryParams, isEmptyQuery, parseSince } from './core/query.ts';
 export { backupOwner, OWNER, type Owner, RESTORE, type RestoreStatus, restoreStatus } from './core/restore.ts';
 export { type EnvironmentStatus, environmentStatus } from './core/status.ts';
+export {
+  diffFieldValues,
+  diffText,
+  type LocaleTextDiff,
+  TEXT,
+  type TextPart,
+  type TextPartKind,
+  valueText,
+} from './core/text-diff.ts';
 // 8. Errores
 export { AbortError, formatError, statusOf } from './errors.ts';
 // 2. Migrar, por etapas. Solo `execute` escribe.

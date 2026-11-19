@@ -5,6 +5,7 @@ import type { ContentType, Entry, Field, Locales } from '../contentful/types.ts'
 import { fieldsForDestination, mergeWithExisting, writableFields } from './fields.ts';
 import { exactJson } from './json.ts';
 import { diffContentType } from './model.ts';
+import { byLocale, richTextOf } from './text-diff.ts';
 
 export const VALUE = {
   SAME: 'same',
@@ -80,19 +81,14 @@ function describe(value: unknown): string {
   if (Array.isArray(value)) return `[${value.length}] ${value.slice(0, 3).map(describe).join(', ')}`;
   const obj = value as { sys?: { type?: string; id?: string }; nodeType?: string };
   if (obj.sys?.type === 'Link') return `→ ${obj.sys.id}`;
-  if (obj.nodeType === 'document') return `rich text: ${richTextPlain(value)}`;
-  const entries = Object.entries(value as Record<string, unknown>);
+  if (obj.nodeType === 'document') return `rich text: ${richTextOf(obj).replace(/\s+/g, ' ').trim()}`;
   // Valor por locale ({ "es-CO": … }): se muestra el primero.
-  if (entries.length && entries.every(([k]) => /^[a-z]{2}(-[A-Za-z0-9]+)*$/.test(k))) {
-    const [, first] = entries[0] as [string, unknown];
-    return entries.length > 1 ? `${describe(first)} (+${entries.length - 1} idiomas)` : describe(first);
+  const locales = byLocale(value);
+  if (locales) {
+    const [, first] = locales[0] as [string, unknown];
+    return locales.length > 1 ? `${describe(first)} (+${locales.length - 1} idiomas)` : describe(first);
   }
   return exactJson(value);
-}
-
-function richTextPlain(node: unknown): string {
-  const n = node as { value?: string; content?: unknown[] };
-  return [n.value ?? '', ...(n.content ?? []).map(richTextPlain)].join(' ').replace(/\s+/g, ' ').trim();
 }
 
 /** El valor por locale solo con `locales`; `undefined` si no queda ninguno. */

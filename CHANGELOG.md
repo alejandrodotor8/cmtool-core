@@ -6,6 +6,20 @@ Desde la 0.18.0, `cmtool-core` y `cmtool-cli` llevan siempre la misma versión: 
 
 Hasta la 0.16.1, este código era parte del CLI `cfm` (hoy `cmtool-cli`). Lo que cambió antes está en el CHANGELOG y el historial de git de ese repositorio.
 
+## 0.20.0 — 2026-11-18
+
+Para resaltar qué cambia en un campo y verlo completo.
+
+### Agregado
+
+- **`diffText`**: qué cambia de un texto a otro, palabra por palabra (tramos iguales, quitados y agregados). Juntando lo igual con lo quitado sale el texto de antes; con lo agregado, el de después. Con textos enormes y del todo distintos, el tramo se marca entero para no tardar.
+- **`diffFieldValues`**: compara dos valores de un campo como texto, idioma por idioma, con el texto completo de cada lado y su `diffText`.
+- **`valueText`**: el texto completo de un valor, sin recortar: un rich text con cada bloque (párrafo, título, ítem de lista) en su línea y lo embebido como `[→ id]`, una lista separada por comas, un link como `→ id`.
+
+### Corregido
+
+- `summarizeValue` ya no parte las palabras de un rich text que tienen un formato en una parte ("**pala**bra" salía "pala bra"), y muestra las entries embebidas como `[→ id]`. Usa la misma lectura del rich text que `valueText`.
+
 ## 0.19.0 — 2026-11-18
 
 Para mostrar campo por campo lo que hace una migración, también lo que no cambia.

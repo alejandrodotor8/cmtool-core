@@ -1,6 +1,6 @@
 {
   "name": "cmtool-core",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Lógica para migrar contenido de Contentful entre ambientes (comparar, planear, escribir y respaldar), sin pantalla: para un CLI, una web o un backend",
   "keywords": [
     "contentful",
